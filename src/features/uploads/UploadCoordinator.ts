@@ -69,6 +69,8 @@ export interface IUploadCoordinatorDeps {
   api?: IReportApi;
   /** Override clock for deterministic tests */
   now?: () => string;
+  /** Called after every job state change so the UI can re-read from SQLite */
+  onJobStateChange?: () => void;
 }
 
 // ─── Coordinator ──────────────────────────────────────────────────────────────
@@ -78,6 +80,7 @@ export class UploadCoordinator {
   private _running = false;
   private readonly _api: IReportApi;
   private readonly _now: () => string;
+  private readonly _onJobStateChange: () => void;
 
   static getInstance(deps?: IUploadCoordinatorDeps): UploadCoordinator {
     if (!UploadCoordinator._instance) {
@@ -99,6 +102,7 @@ export class UploadCoordinator {
       finalizeReport,
     };
     this._now = deps?.now ?? (() => new Date().toISOString());
+    this._onJobStateChange = deps?.onJobStateChange ?? (() => { });
   }
 
   // ─── Public API ─────────────────────────────────────────────────────────────
@@ -170,20 +174,24 @@ export class UploadCoordinator {
     if (!report) {
       console.warn(`[UploadCoordinator] Report ${job.reportId} not found, marking job failed`);
       markJobFailed(job.id, 'Report record not found in local database');
+      this._onJobStateChange();
       return;
     }
 
     console.log(`[UploadCoordinator] Starting job ${job.id} for report ${report.id}`);
     markJobRunning(job.id);
     updateReportStatus(report.id, 'uploading');
+    this._onJobStateChange(); // → UI shows "Uploading…"
 
     try {
       await this._uploadReport(report, job);
       markJobCompleted(job.id);
       updateReportStatus(report.id, 'uploaded');
+      this._onJobStateChange(); // → UI shows "Delivered ✓"
       console.log(`[UploadCoordinator] Report ${report.id} uploaded successfully`);
     } catch (error) {
       this._handleJobError(job, error);
+      this._onJobStateChange(); // → UI shows retry timestamp or "Needs attention"
     }
   }
 

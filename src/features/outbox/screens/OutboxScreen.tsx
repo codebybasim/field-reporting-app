@@ -22,13 +22,20 @@ import {
   Alert,
   ActivityIndicator,
   RefreshControl,
+  Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useReportStore, type ReportWithImages } from '../../../store/reportStore';
 import { StatusBadge } from '../../reports/components/StatusBadge';
 import { executeReset } from '../../uploads/ResetService';
 import { scheduleUpload } from '../../uploads/BackgroundScheduler';
-import { Platform } from 'react-native';
+import {
+  resetFailedJobs,
+} from '../../../core/database/repositories/UploadJobRepository';
+import {
+  updateReportStatus,
+  getAllReports,
+} from '../../../core/database/repositories/ReportRepository';
 
 export function OutboxScreen(): React.JSX.Element {
   const insets = useSafeAreaInsets();
@@ -37,7 +44,7 @@ export function OutboxScreen(): React.JSX.Element {
 
   useEffect(() => {
     refresh();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleRefresh = useCallback(() => {
@@ -47,12 +54,22 @@ export function OutboxScreen(): React.JSX.Element {
   const handleRetry = useCallback(async () => {
     if (Platform.OS !== 'android') return;
     try {
+      // Reset all failed jobs back to pending so the coordinator picks them up
+      resetFailedJobs();
+      // Also reset the report status so they show as pending in the UI
+      const allReports = getAllReports();
+      for (const r of allReports) {
+        if (r.status === 'failed') {
+          updateReportStatus(r.id, 'pending');
+        }
+      }
+      refresh();
       await scheduleUpload();
-      Alert.alert('Retry Queued', 'Upload has been re-scheduled.');
+      Alert.alert('Retry Queued', 'Failed reports have been reset and upload re-scheduled.');
     } catch {
-      Alert.alert('Error', 'Could not schedule upload.');
+      Alert.alert('Error', 'Could not schedule retry.');
     }
-  }, []);
+  }, [refresh]);
 
   const handleReset = useCallback(() => {
     const localCount = reports.filter(r => r.report.status !== 'uploaded').length;

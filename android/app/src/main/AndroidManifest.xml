@@ -55,17 +55,9 @@
       -->
 
       <!--
-        HeadlessUploadTaskService: runs Headless JS inside a WorkManager worker.
-        Declared as a service so WorkManager can bind to it.
-      -->
-      <service
-        android:name=".upload.HeadlessUploadTaskService"
-        android:exported="false"
-        android:foregroundServiceType="dataSync" />
-
-      <!--
-        Foreground upload service used by react-native-background-actions when
-        the app needs to show a persistent notification during active upload.
+        Foreground upload service used by react-native-background-actions.
+        Runs UploadCoordinator.processQueue() in a loop while showing a
+        persistent notification.  Survives backgrounding.
       -->
       <service
         android:name="com.asterinet.react.bgactions.RNBackgroundActionsTask"

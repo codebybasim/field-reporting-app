@@ -8,21 +8,19 @@
  * Body: { idempotency_key: string, description: string, expected_image_count: number }
  * Returns: { id, idempotency_key, status, created_at }
  */
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { applyFailureSimulator, simulatorHeaders } from '../_shared/failure-simulator.ts';
+import { applyFailureSimulator } from '../_shared/failure-simulator.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-failure-mode',
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  // ── Failure simulation (dev only) ────────────────────────────────────────
   const simResponse = await applyFailureSimulator(req);
   if (simResponse) return simResponse;
 
@@ -60,7 +58,6 @@ serve(async (req: Request) => {
     }
 
     // ── Idempotent upsert ─────────────────────────────────────────────────
-    // ON CONFLICT returns the existing row unchanged (no data mutation on retry).
     const { data, error } = await supabase
       .from('reports')
       .upsert(
@@ -79,11 +76,7 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify(data), {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-        ...simulatorHeaders(),
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     console.error('[create-report]', err);

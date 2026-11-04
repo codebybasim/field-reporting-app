@@ -6,7 +6,7 @@
  * whether to retry.  Never imported by React components directly; used only
  * by the UploadCoordinator.
  */
-import { supabase } from '../supabase/client';
+import { getSupabase } from '../supabase/client';
 import { ENV } from '../../utils/env';
 import type { ServerReport } from '../../types';
 
@@ -112,44 +112,65 @@ export async function finalizeReport(params: {
 /** Upload a binary file directly to Supabase Storage. */
 export async function uploadImageToStorage(params: {
   storagePath: string;
-  fileUri: string;          // file:// path on device
+  fileUri: string;          // bare absolute path on device (no file:// scheme)
   fileSizeBytes: number;
   failureMode?: string;
 }): Promise<void> {
-  // Build the Storage upload URL manually so we can stream the file.
   const uploadUrl =
     `${ENV.SUPABASE_URL}/storage/v1/object/report-images/${params.storagePath}`;
 
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${ENV.SUPABASE_ANON_KEY}`,
-    'Content-Type': 'image/jpeg',
-    'x-upsert': 'false', // never silently overwrite
-  };
-  if (params.failureMode) {
-    headers['x-failure-mode'] = params.failureMode;
-  }
+  // React Native fetch does NOT support uploading local files directly.
+  // XMLHttpRequest on Android can read a file:// URI as a binary blob
+  // without loading the entire file into the JS heap.
+  // We ensure the path has the file:// scheme XHR expects.
+  const fileUri = params.fileUri.startsWith('file://')
+    ? params.fileUri
+    : `file://${params.fileUri}`;
 
-  // Use the native fetch with a file:// URI body — React Native's fetch
-  // implementation streams the file without loading it into JS memory.
-  const response = await fetch(uploadUrl, {
-    method: 'POST',
-    headers,
-    body: { uri: params.fileUri, name: params.storagePath, type: 'image/jpeg' } as any,
+  await new Promise<void>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', uploadUrl, true);
+    xhr.setRequestHeader('Authorization', `Bearer ${ENV.SUPABASE_ANON_KEY}`);
+    xhr.setRequestHeader('Content-Type', 'image/jpeg');
+    xhr.setRequestHeader('x-upsert', 'false');
+    if (params.failureMode) {
+      xhr.setRequestHeader('x-failure-mode', params.failureMode);
+    }
+
+    xhr.onload = () => {
+      if (xhr.status === 200 || xhr.status === 201) {
+        resolve();
+      } else if (xhr.status === 409) {
+        // File already exists in Storage — idempotent, treat as success
+        resolve();
+      } else {
+        const err = new Error(
+          `[uploadImageToStorage] HTTP ${xhr.status}: ${xhr.responseText}`,
+        );
+        (err as any).httpStatus = xhr.status;
+        reject(err);
+      }
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('[uploadImageToStorage] Network request failed'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('[uploadImageToStorage] Request timed out'));
+    };
+
+    xhr.timeout = 120_000; // 2 minutes for large images
+
+    // Send the local file as a Blob — RN's XHR implementation on Android
+    // correctly reads file:// URIs and streams them as binary.
+    xhr.send({ uri: fileUri, type: 'image/jpeg', name: 'image.jpg' } as any);
   });
-
-  if (!response.ok) {
-    const text = await response.text().catch(() => '');
-    // 409 Conflict means the file already exists in Storage.  Treat this as
-    // success — the register-image step will verify the checksum.
-    if (response.status === 409) return;
-    const err = new Error(`[uploadImageToStorage] HTTP ${response.status}: ${text}`);
-    (err as any).httpStatus = response.status;
-    throw err;
-  }
 }
 
 /** Fetch finalised reports for the Server Reports screen. */
 export async function fetchServerReports(): Promise<ServerReport[]> {
+  const supabase = getSupabase();
   const { data, error } = await supabase
     .from('reports')
     .select(`

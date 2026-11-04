@@ -19,7 +19,8 @@
 
 import { cancelUpload } from './BackgroundScheduler';
 import { stop as stopConnectivityDispatcher } from './ConnectivityDispatcher';
-import { UploadCoordinator } from './UploadCoordinator';
+// UploadCoordinator is lazy-required below to avoid loading
+// @supabase/supabase-js at app launch (crashes Hermes without polyfills).
 import {
   deleteAllReports,
 } from '../../core/database/repositories/ReportRepository';
@@ -56,8 +57,9 @@ export async function executeReset(pendingCount: number): Promise<ResetResult> {
     errors.push(`Connectivity stop: ${e instanceof Error ? e.message : String(e)}`);
   }
 
-  // 3. Stop JS queue
+  // 3. Stop JS queue (lazy require to avoid loading Supabase at launch)
   try {
+    const { UploadCoordinator } = require('./UploadCoordinator') as typeof import('./UploadCoordinator');
     await UploadCoordinator.getInstance().reset();
     UploadCoordinator.resetInstance();
   } catch (e) {

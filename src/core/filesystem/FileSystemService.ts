@@ -29,14 +29,17 @@ export function getImagePath(reportId: string, imageId: string): string {
 }
 
 export async function copyToAppStorage(
-  sourceUri: string,
+  sourcePath: string,    // bare absolute path (no file:// scheme)
   reportId: string,
   imageId: string,
 ): Promise<string> {
   await ensureReportDirectory(reportId);
   const dest = getImagePath(reportId, imageId);
-  // Handle Android content:// URIs and file:// URIs uniformly
-  await RNFS.copyFile(sourceUri.replace('file://', ''), dest);
+  // Strip any file:// scheme — RNFS.copyFile wants bare paths on Android
+  const src = sourcePath.startsWith('file://')
+    ? sourcePath.replace(/^file:\/\//, '')
+    : sourcePath;
+  await RNFS.copyFile(src, dest);
   return dest;
 }
 

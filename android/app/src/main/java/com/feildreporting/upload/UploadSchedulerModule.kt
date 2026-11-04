@@ -12,11 +12,12 @@ import com.facebook.react.bridge.ReactMethod
  * React Native Native Module that exposes WorkManager scheduling to JS.
  *
  * JS usage (via BackgroundScheduler.ts):
- *   import { NativeModules } from 'react-native'
- *   const { UploadSchedulerModule } = NativeModules
- *   UploadSchedulerModule.scheduleUpload()
- *   UploadSchedulerModule.cancelUpload()
- *   UploadSchedulerModule.notifyTaskComplete(success, error)
+ *   UploadSchedulerModule.scheduleUpload()  — enqueue WorkManager backup job
+ *   UploadSchedulerModule.cancelUpload()     — cancel WorkManager backup job
+ *   UploadSchedulerModule.isUploadRunning()  — check WorkManager status
+ *
+ * Note: The actual upload is run by react-native-background-actions on the
+ * JS side.  WorkManager is only a backup for when the app process is killed.
  */
 class UploadSchedulerModule(
     private val reactContext: ReactApplicationContext,
@@ -25,14 +26,6 @@ class UploadSchedulerModule(
     companion object {
         const val NAME = "UploadSchedulerModule"
         private const val TAG = "UploadSchedulerModule"
-
-        /**
-         * Singleton reference to the currently-running HeadlessTask.
-         * Set by UploadWorker before executing; cleared on finish/cancel.
-         * Allows JS to signal completion back to the worker.
-         */
-        @Volatile
-        var currentTask: HeadlessTask? = null
     }
 
     override fun getName(): String = NAME
@@ -68,16 +61,5 @@ class UploadSchedulerModule(
             Log.e(TAG, "isUploadRunning failed", e)
             promise.reject("STATUS_ERROR", e.message, e)
         }
-    }
-
-    /**
-     * Called from the JS Headless task when it finishes (success or failure).
-     * This signals the UploadWorker coroutine to resume and return the result.
-     */
-    @ReactMethod
-    fun notifyTaskComplete(success: Boolean, error: String?) {
-        Log.d(TAG, "notifyTaskComplete called: success=$success error=$error")
-        currentTask?.finish(success = success, error = error)
-        currentTask = null
     }
 }

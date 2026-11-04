@@ -99,3 +99,15 @@ export function invalidateAllJobs(): void {
     [current + 1],
   );
 }
+
+/** Reset failed jobs back to pending so they can be retried. */
+export function resetFailedJobs(): number {
+  const db = getDb();
+  db.executeSync(
+    "UPDATE upload_jobs SET status = 'pending', attempts = 0, last_error = NULL, next_attempt_at = NULL WHERE status = 'failed';",
+  );
+  const result = db.executeSync(
+    "SELECT changes() as n;",
+  );
+  return ((result.rows?.[0]?.n) as number) ?? 0;
+}

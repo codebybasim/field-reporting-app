@@ -8,16 +8,15 @@
  * POST /functions/v1/finalize-report
  * Body: { report_id: string }
  */
-import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { applyFailureSimulator, simulatorHeaders } from '../_shared/failure-simulator.ts';
+import { applyFailureSimulator } from '../_shared/failure-simulator.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-failure-mode',
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
@@ -58,14 +57,7 @@ serve(async (req: Request) => {
     if (report.status === 'finalized') {
       return new Response(
         JSON.stringify({ id: report.id, status: 'finalized', already_finalized: true }),
-        {
-          status: 200,
-          headers: {
-            ...corsHeaders,
-            'Content-Type': 'application/json',
-            ...simulatorHeaders(),
-          },
-        },
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
@@ -100,11 +92,7 @@ serve(async (req: Request) => {
 
     return new Response(JSON.stringify(finalized), {
       status: 200,
-      headers: {
-        ...corsHeaders,
-        'Content-Type': 'application/json',
-        ...simulatorHeaders(),
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     console.error('[finalize-report]', err);
