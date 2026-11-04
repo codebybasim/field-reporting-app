@@ -6,12 +6,13 @@
  * This screen proves what actually reached the backend.
  */
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
   FlatList,
   Image,
+  Modal,
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
@@ -20,6 +21,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { loadServerReports } from '../services/ServerReportsService';
+import { FailureSimulatorScreen } from './FailureSimulatorScreen';
 import type { ServerReport, ServerImage } from '../../../types';
 
 export function ServerReportsScreen(): React.JSX.Element {
@@ -28,6 +30,20 @@ export function ServerReportsScreen(): React.JSX.Element {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
+  const [showSimulator, setShowSimulator] = useState(false);
+
+  // 5-tap easter egg to open the dev failure simulator
+  const tapCount = useRef(0);
+  const tapTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const handleHeaderTap = useCallback(() => {
+    tapCount.current += 1;
+    if (tapTimer.current) clearTimeout(tapTimer.current);
+    tapTimer.current = setTimeout(() => { tapCount.current = 0; }, 2000);
+    if (tapCount.current >= 5) {
+      tapCount.current = 0;
+      setShowSimulator(true);
+    }
+  }, []);
 
   const fetchReports = useCallback(async (isRefresh = false) => {
     if (isRefresh) setRefreshing(true);
@@ -47,69 +63,90 @@ export function ServerReportsScreen(): React.JSX.Element {
 
   useEffect(() => {
     fetchReports(false);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (loading) {
     return (
-      <View style={styles.centred}>
-        <ActivityIndicator size="large" color="#2563EB" />
-        <Text style={styles.loadingText}>Loading server reports…</Text>
-      </View>
+      <>
+        <Modal visible={showSimulator} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSimulator(false)}>
+          <FailureSimulatorScreen onClose={() => setShowSimulator(false)} />
+        </Modal>
+        <View style={styles.centred}>
+          <ActivityIndicator size="large" color="#2563EB" />
+          <Text style={styles.loadingText}>Loading server reports…</Text>
+        </View>
+      </>
     );
   }
 
   if (error) {
     return (
-      <View style={styles.centred}>
-        <Text style={styles.errorIcon}>⚠️</Text>
-        <Text style={styles.errorTitle}>Could not load reports</Text>
-        <Text style={styles.errorMsg}>{error}</Text>
-        <TouchableOpacity
-          style={styles.retryBtn}
-          onPress={() => fetchReports(false)}
-          accessibilityRole="button">
-          <Text style={styles.retryBtnText}>Try Again</Text>
-        </TouchableOpacity>
-      </View>
+      <>
+        <Modal visible={showSimulator} animationType="slide" presentationStyle="pageSheet" onRequestClose={() => setShowSimulator(false)}>
+          <FailureSimulatorScreen onClose={() => setShowSimulator(false)} />
+        </Modal>
+        <View style={styles.centred}>
+          <Text style={styles.errorIcon}>⚠️</Text>
+          <Text style={styles.errorTitle}>Could not load reports</Text>
+          <Text style={styles.errorMsg}>{error}</Text>
+          <TouchableOpacity
+            style={styles.retryBtn}
+            onPress={() => fetchReports(false)}
+            accessibilityRole="button">
+            <Text style={styles.retryBtnText}>Try Again</Text>
+          </TouchableOpacity>
+        </View>
+      </>
     );
   }
 
   return (
-    <FlatList
-      style={styles.container}
-      data={reports}
-      keyExtractor={item => item.id}
-      contentContainerStyle={[
-        reports.length === 0 ? styles.emptyContainer : styles.listContent,
-        { paddingBottom: insets.bottom + 16 },
-      ]}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={() => fetchReports(true)}
-          tintColor="#2563EB"
-        />
-      }
-      ListHeaderComponent={
-        <View style={styles.listHeader}>
-          <Text style={styles.listHeaderText}>
-            {reports.length} delivered report{reports.length !== 1 ? 's' : ''}
-          </Text>
-          <Text style={styles.listHeaderSub}>Pull down to refresh</Text>
-        </View>
-      }
-      ListEmptyComponent={
-        <View style={styles.emptyState}>
-          <Text style={styles.emptyIcon}>☁️</Text>
-          <Text style={styles.emptyTitle}>No delivered reports</Text>
-          <Text style={styles.emptySubtitle}>
-            Reports appear here once they have been delivered to and confirmed by the server.
-          </Text>
-        </View>
-      }
-      renderItem={({ item }) => <ServerReportCard report={item} />}
-    />
+    <>
+      <Modal
+        visible={showSimulator}
+        animationType="slide"
+        presentationStyle="pageSheet"
+        onRequestClose={() => setShowSimulator(false)}>
+        <FailureSimulatorScreen onClose={() => setShowSimulator(false)} />
+      </Modal>
+      <FlatList
+        style={styles.container}
+        data={reports}
+        keyExtractor={item => item.id}
+        contentContainerStyle={[
+          reports.length === 0 ? styles.emptyContainer : styles.listContent,
+          { paddingBottom: insets.bottom + 16 },
+        ]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={() => fetchReports(true)}
+            tintColor="#2563EB"
+          />
+        }
+        ListHeaderComponent={
+          <TouchableOpacity activeOpacity={1} onPress={handleHeaderTap}>
+            <View style={styles.listHeader}>
+              <Text style={styles.listHeaderText}>
+                {reports.length} delivered report{reports.length !== 1 ? 's' : ''}
+              </Text>
+              <Text style={styles.listHeaderSub}>Pull down to refresh · tap title 5× for dev tools</Text>
+            </View>
+          </TouchableOpacity>
+        }
+        ListEmptyComponent={
+          <View style={styles.emptyState}>
+            <Text style={styles.emptyIcon}>☁️</Text>
+            <Text style={styles.emptyTitle}>No delivered reports</Text>
+            <Text style={styles.emptySubtitle}>
+              Reports appear here once they have been delivered to and confirmed by the server.
+            </Text>
+          </View>
+        }
+        renderItem={({ item }) => <ServerReportCard report={item} />}
+      />
+    </>
   );
 }
 
