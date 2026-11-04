@@ -9,12 +9,12 @@ import React from 'react';
 import {
   View,
   Image,
-  Text,
   TouchableOpacity,
   StyleSheet,
   ActivityIndicator,
   Dimensions,
 } from 'react-native';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 
 export interface ImageItem {
   id: string;
@@ -55,7 +55,7 @@ export function ImageGrid({ images, onRemove, readOnly = false }: Props): React.
               onPress={() => onRemove(item.id)}
               accessibilityLabel="Remove photo"
               accessibilityRole="button">
-              <Text style={styles.removeText}>✕</Text>
+              <MaterialCommunityIcons name="close" size={13} color="#FFFFFF" />
             </TouchableOpacity>
           )}
         </View>
@@ -97,11 +97,5 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.6)',
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  removeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
-    lineHeight: 13,
   },
 });

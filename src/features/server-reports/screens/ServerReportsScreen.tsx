@@ -20,6 +20,8 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { loadServerReports } from '../services/ServerReportsService';
 import { FailureSimulatorScreen } from './FailureSimulatorScreen';
 import type { ServerReport, ServerImage } from '../../../types';
@@ -87,7 +89,7 @@ export function ServerReportsScreen(): React.JSX.Element {
           <FailureSimulatorScreen onClose={() => setShowSimulator(false)} />
         </Modal>
         <View style={styles.centred}>
-          <Text style={styles.errorIcon}>⚠️</Text>
+          <Ionicons name="warning-outline" size={40} color="#F59E0B" />
           <Text style={styles.errorTitle}>Could not load reports</Text>
           <Text style={styles.errorMsg}>{error}</Text>
           <TouchableOpacity
@@ -137,7 +139,7 @@ export function ServerReportsScreen(): React.JSX.Element {
         }
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>☁️</Text>
+            <MaterialCommunityIcons name="cloud-off-outline" size={56} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>No delivered reports</Text>
             <Text style={styles.emptySubtitle}>
               Reports appear here once they have been delivered to and confirmed by the server.
@@ -173,16 +175,20 @@ function ServerReportCard({ report }: { report: ServerReport }): React.JSX.Eleme
 
       {/* Status chip */}
       <View style={styles.statusChip}>
-        <Text style={styles.statusChipText}>✓ {report.status}</Text>
+        <Ionicons name="checkmark-circle" size={13} color="#065F46" />
+        <Text style={styles.statusChipText}>{report.status}</Text>
       </View>
 
       {/* Description */}
       <Text style={styles.cardDescription}>{report.description}</Text>
 
       {/* Image count */}
-      <Text style={styles.imageCount}>
-        📷 {report.images.length} image{report.images.length !== 1 ? 's' : ''}
-      </Text>
+      <View style={styles.imageCountRow}>
+        <MaterialCommunityIcons name="image-multiple-outline" size={14} color="#6B7280" />
+        <Text style={styles.imageCount}>
+          {report.images.length} image{report.images.length !== 1 ? 's' : ''}
+        </Text>
+      </View>
 
       {/* Image thumbnails */}
       {report.images.length > 0 && (
@@ -205,7 +211,7 @@ function ServerImageThumb({ image }: { image: ServerImage }): React.JSX.Element 
   if (!image.public_url || failed) {
     return (
       <View style={[styles.thumb, styles.thumbPlaceholder]}>
-        <Text style={styles.thumbPlaceholderText}>🖼</Text>
+        <MaterialCommunityIcons name="image-broken-variant" size={28} color="#9CA3AF" />
       </View>
     );
   }
@@ -252,11 +258,13 @@ const styles = StyleSheet.create({
   serverId: { flex: 1, fontSize: 11, color: '#374151', fontFamily: Platform.OS === 'android' ? 'monospace' : 'Courier New' },
   cardDate: { fontSize: 12, color: '#9CA3AF' },
   statusChip: {
-    alignSelf: 'flex-start', backgroundColor: '#D1FAE5',
-    borderRadius: 10, paddingHorizontal: 8, paddingVertical: 2,
+    alignSelf: 'flex-start', backgroundColor: '#D1FAE5', flexDirection: 'row',
+    alignItems: 'center', gap: 4,
+    borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3,
   },
   statusChipText: { fontSize: 11, fontWeight: '600', color: '#065F46' },
   cardDescription: { fontSize: 14, color: '#374151', lineHeight: 20 },
+  imageCountRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   imageCount: { fontSize: 12, color: '#6B7280' },
   imageStrip: { marginTop: 4 },
   thumb: {

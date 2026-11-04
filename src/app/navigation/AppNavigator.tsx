@@ -12,6 +12,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import type { MainTabParamList } from '../../types';
 
 import { ComposeScreen } from '../../features/reports/screens/ComposeScreen';
@@ -21,9 +22,9 @@ import { ServerReportsScreen } from '../../features/server-reports/screens/Serve
 const Tab = createBottomTabNavigator<MainTabParamList>();
 
 const TAB_ICON: Record<string, string> = {
-  Compose: '✏️',
-  Outbox: '📤',
-  ServerReports: '☁️',
+  Compose: 'pencil-outline',
+  Outbox: 'tray-arrow-up',
+  ServerReports: 'cloud-check-outline',
 };
 
 export function AppNavigator(): React.JSX.Element {
@@ -32,15 +33,13 @@ export function AppNavigator(): React.JSX.Element {
       <Tab.Navigator
         screenOptions={({ route }) => ({
           tabBarLabel: route.name === 'ServerReports' ? 'Server' : route.name,
-          tabBarIcon: ({ focused }) => {
-            const emoji = TAB_ICON[route.name] ?? '•';
-            // Slightly enlarge focused icon
-            return React.createElement(
-              require('react-native').Text,
-              { style: { fontSize: focused ? 24 : 20 } },
-              emoji,
-            );
-          },
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons
+              name={TAB_ICON[route.name] ?? 'circle-outline'}
+              size={size}
+              color={color}
+            />
+          ),
           tabBarActiveTintColor: '#2563EB',
           tabBarInactiveTintColor: '#6B7280',
           tabBarStyle: {
@@ -62,11 +61,11 @@ export function AppNavigator(): React.JSX.Element {
           component={OutboxScreen}
           options={{ title: 'Outbox' }}
         />
-        <Tab.Screen
+        {/* <Tab.Screen
           name="ServerReports"
           component={ServerReportsScreen}
           options={{ title: 'Server Reports' }}
-        />
+        /> */}
       </Tab.Navigator>
     </NavigationContainer>
   );

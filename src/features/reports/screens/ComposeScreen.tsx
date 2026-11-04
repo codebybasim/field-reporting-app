@@ -25,6 +25,7 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
   launchCamera,
   launchImageLibrary,
@@ -198,7 +199,7 @@ export function ComposeScreen(): React.JSX.Element {
               onPress={handleCamera}
               accessibilityRole="button"
               accessibilityLabel="Take a photo with camera">
-              <Text style={styles.photoBtnIcon}>📷</Text>
+              <MaterialCommunityIcons name="camera-outline" size={26} color="#374151" />
               <Text style={styles.photoBtnText}>Camera</Text>
             </TouchableOpacity>
             <TouchableOpacity
@@ -206,7 +207,7 @@ export function ComposeScreen(): React.JSX.Element {
               onPress={handleGallery}
               accessibilityRole="button"
               accessibilityLabel="Choose from gallery">
-              <Text style={styles.photoBtnIcon}>🖼</Text>
+              <MaterialCommunityIcons name="image-outline" size={26} color="#374151" />
               <Text style={styles.photoBtnText}>Gallery</Text>
             </TouchableOpacity>
           </View>
@@ -277,7 +278,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  photoBtnIcon: { fontSize: 24 },
   photoBtnText: { fontSize: 14, fontWeight: '500', color: '#374151' },
   errorBox: {
     backgroundColor: '#FEF2F2',

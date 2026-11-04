@@ -25,6 +25,8 @@ import {
   Platform,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import { useReportStore, type ReportWithImages } from '../../../store/reportStore';
 import { StatusBadge } from '../../reports/components/StatusBadge';
 import { executeReset } from '../../uploads/ResetService';
@@ -151,7 +153,7 @@ export function OutboxScreen(): React.JSX.Element {
         contentContainerStyle={reports.length === 0 ? styles.emptyContainer : styles.listContent}
         ListEmptyComponent={
           <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>📭</Text>
+            <MaterialCommunityIcons name="tray-outline" size={56} color="#D1D5DB" />
             <Text style={styles.emptyTitle}>No reports yet</Text>
             <Text style={styles.emptySubtitle}>
               Compose a report on the first tab to get started.
@@ -197,8 +199,9 @@ function ReportCard({ item }: { item: ReportWithImages }): React.JSX.Element {
 
       {/* Image progress */}
       <View style={styles.progressRow}>
+        <MaterialCommunityIcons name="image-multiple-outline" size={14} color="#6B7280" />
         <Text style={styles.progressLabel}>
-          📷 {uploadedCount} / {images.length} image{images.length !== 1 ? 's' : ''} delivered
+          {uploadedCount} / {images.length} image{images.length !== 1 ? 's' : ''} delivered
         </Text>
         {images.length > 0 && (
           <ProgressBar value={uploadedCount / images.length} />
@@ -208,17 +211,21 @@ function ReportCard({ item }: { item: ReportWithImages }): React.JSX.Element {
       {/* Last error */}
       {report.status === 'failed' && job?.lastError && (
         <View style={styles.errorBox}>
+          <Ionicons name="warning-outline" size={14} color="#B91C1C" style={styles.errorIcon} />
           <Text style={styles.errorText} numberOfLines={2}>
-            ⚠️ {job.lastError}
+            {job.lastError}
           </Text>
         </View>
       )}
 
       {/* Next retry */}
       {report.status === 'pending' && job?.nextAttemptAt && (
-        <Text style={styles.retryInfo}>
-          🕐 Retry at {new Date(job.nextAttemptAt).toLocaleTimeString()}
-        </Text>
+        <View style={styles.retryInfoRow}>
+          <Ionicons name="time-outline" size={13} color="#92400E" />
+          <Text style={styles.retryInfo}>
+            Retry at {new Date(job.nextAttemptAt).toLocaleTimeString()}
+          </Text>
+        </View>
       )}
 
       {/* Attempts */}
@@ -267,8 +274,7 @@ const styles = StyleSheet.create({
   resetBtnText: { fontSize: 13, fontWeight: '600', color: '#DC2626' },
   listContent: { padding: 12, gap: 10 },
   emptyContainer: { flex: 1 },
-  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 60 },
-  emptyIcon: { fontSize: 56, marginBottom: 16 },
+  emptyState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 60, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: '600', color: '#111827', marginBottom: 8 },
   emptySubtitle: { fontSize: 14, color: '#6B7280', textAlign: 'center', lineHeight: 20 },
   uploadingBanner: {
@@ -296,17 +302,22 @@ const styles = StyleSheet.create({
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardDate: { fontSize: 12, color: '#9CA3AF' },
   cardDescription: { fontSize: 14, color: '#374151', lineHeight: 20 },
-  progressRow: { gap: 4 },
+  progressRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   progressLabel: { fontSize: 12, color: '#6B7280' },
   barTrack: {
     height: 4, backgroundColor: '#E5E7EB', borderRadius: 2, overflow: 'hidden',
   },
   barFill: { height: '100%', backgroundColor: '#2563EB', borderRadius: 2 },
   errorBox: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
     backgroundColor: '#FEF2F2', borderRadius: 6, padding: 8,
     borderWidth: 1, borderColor: '#FECACA',
   },
-  errorText: { fontSize: 12, color: '#B91C1C', lineHeight: 16 },
+  errorIcon: { marginTop: 1 },
+  errorText: { flex: 1, fontSize: 12, color: '#B91C1C', lineHeight: 16 },
+  retryInfoRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   retryInfo: { fontSize: 12, color: '#92400E' },
   attemptCount: { fontSize: 11, color: '#9CA3AF' },
 });
